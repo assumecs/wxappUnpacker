@@ -64,13 +64,35 @@ function doWxss(dir,cb){
 		};
 	}
 	function runVM(name,code){
-		let wxAppCode={},handle={cssFile:name};
+		/* let wxAppCode={},handle={cssFile:name};
 		let vm=new VM({sandbox:Object.assign(new GwxCfg(),{__wxAppCode__:wxAppCode,setCssToHead:cssRebuild.bind(handle)})});
 		vm.run(code);
 		for(let name in wxAppCode)if(name.endsWith(".wxss")){
 			handle.cssFile=path.resolve(frameName,"..",name);
 			wxAppCode[name]();
-		}
+		} */
+		let wxAppCode = {};
+      let handle = {cssFile: name};
+      let gg = new GwxCfg();
+      let tsandbox = {
+         $gwx: GwxCfg.prototype["$gwx"],
+         __mainPageFrameReady__: GwxCfg.prototype["$gwx"],   //解决 $gwx is not defined
+         __vd_version_info__: GwxCfg.prototype["$gwx"],  //解决 __vd_version_info__ is not defined
+         __wxAppCode__: wxAppCode,
+         setCssToHead: cssRebuild.bind(handle)
+      }
+ 
+      let vm = new VM({sandbox: tsandbox});
+      vm.run(code);
+      for (let name in wxAppCode) {
+         if (name.endsWith(".wxss")) {
+            handle.cssFile = path.resolve(frameName, "..", name);
+            wxAppCode[name]();
+         }
+      }
+// ————————————————
+// 版权声明：本文为CSDN博主「hjhkkkl」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+// 原文链接：https://blog.csdn.net/Thoms_/article/details/102683622
 	}
 	function preRun(dir,frameFile,mainCode,files,cb){
 		wu.addIO(cb);
@@ -84,6 +106,19 @@ function doWxss(dir,cb){
 	}
 	function runOnce(){
 		for(let name in runList)runVM(name,runList[name]);
+		/* for (let name in runList) {
+			console.log(name, runList[name]);
+			var start = `var window = window || {}; var __pageFrameStartTime__ = Date.now(); 	var __webviewId__; 	var __wxAppCode__={}; 	var __mainPageFrameReady__ = function(){}; 	var __WXML_GLOBAL__={entrys:{},defines:{},modules:{},ops:[],wxs_nf_init:undefined,total_ops:0}; 	var __vd_version_info__=__vd_version_info__||{};
+			$gwx=function(path,global){
+				if(typeof global === 'undefined') global={};if(typeof __WXML_GLOBAL__ === 'undefined') {__WXML_GLOBAL__={};
+				}__WXML_GLOBAL__.modules = __WXML_GLOBAL__.modules || {};
+			}`;
+			runVM(name, start + " \r\n" + runList[name]);
+		}
+	// ————————————————
+	// 版权声明：本文为CSDN博主「cc°　　淡忘」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+	// 原文链接：https://blog.csdn.net/weixin_45272449/article/details/100108046
+ */
 	}
 	function transformCss(style){
 		let ast=csstree.parse(style);
